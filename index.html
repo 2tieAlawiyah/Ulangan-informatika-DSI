@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ulangan Harian Informatika XII - Dampak Sosial Informatika</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{background:#0f172a;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input{-webkit-user-select:text;user-select:text}
+@media print{body{display:none!important}}
+body.hide #sExam,body.hide #sHasil{visibility:hidden!important}
+#wm{background-repeat:repeat;opacity:.9}
+.opt.sel{background:#dbeafe;border-color:#2563eb}
+.cert{border:10px double #b45309;background:#fffbeb}
+</style>
+</head>
+<body class="text-slate-800 min-h-screen">
+<div id="cover" class="hidden fixed inset-0 z-50 bg-black text-white flex-col items-center justify-center text-center p-6">
+  <div class="text-5xl mb-3">⚠️</div>
+  <h2 class="text-2xl font-bold mb-2">Pelanggaran Terdeteksi</h2>
+  <p id="coverMsg" class="mb-5 max-w-md"></p>
+  <button id="coverBtn" class="bg-blue-600 px-6 py-2 rounded-lg font-semibold">Kembali ke Ujian (layar penuh)</button>
+</div>
+
+<div id="wm" class="hidden fixed inset-0 z-40 pointer-events-none"></div>
+<main class="max-w-4xl mx-auto p-4">
+  <header class="text-center text-white py-5">
+    <p class="text-sky-300 text-sm tracking-widest">INFORMATIKA KELAS XII</p>
+    <h1 class="text-2xl md:text-3xl font-extrabold">Ulangan Harian: Dampak Sosial Informatika</h1>
+    <p class="text-slate-300 text-sm">Algoritma, Media Sosial &amp; UU ITE</p>
+  </header>
+
+  <!-- 1. IDENTITAS -->
+  <section id="sIdent" class="bg-white rounded-2xl p-6 shadow-xl">
+    <h2 class="text-xl font-bold mb-4">1. Identitas Siswa</h2>
+    <div class="grid md:grid-cols-2 gap-3">
+      <input id="nama" class="border rounded-lg p-2" placeholder="Nama Lengkap *">
+      <input id="kelas" class="border rounded-lg p-2" placeholder="Kelas (mis. XII-1) *">
+      <input id="nis" class="border rounded-lg p-2" placeholder="NIS / No. Absen *">
+      <input id="sekolah" class="border rounded-lg p-2" placeholder="Nama Sekolah">
+    </div>
+    <div class="bg-amber-50 border border-amber-300 rounded-lg p-3 mt-4 text-sm">
+      <b>Tata tertib:</b> ujian berjalan dalam mode layar penuh. Berpindah tab/aplikasi, keluar layar penuh, atau menekan tombol terlarang dicatat sebagai pelanggaran. <b>3 pelanggaran = ujian otomatis dikumpulkan.</b>
+      Bagian A: 60 PG (bobot 80) · Bagian B: 20 menjodohkan (bobot 20) · Total 100 · KKM 70.
+    </div>
+    <button id="btnStart" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg">Mulai Ujian</button>
+  </section>
+
+  <!-- UJIAN -->
+  <div id="sExam" class="hidden">
+    <div class="sticky top-0 z-10 bg-slate-900 text-white rounded-b-xl px-4 py-2 flex justify-between text-sm mb-3">
+      <span id="who"></span><span id="prog"></span><span id="viol" class="text-amber-300"></span>
+    </div>
+    <section class="bg-white rounded-2xl p-5 shadow-xl mb-4">
+      <h2 class="text-xl font-bold mb-1">Bagian A — Pilihan Ganda (HOTS) · 60 soal</h2>
+      <p class="text-sm text-slate-500 mb-4">Pilih satu jawaban paling tepat.</p>
+      <div id="mcq" class="space-y-6"></div>
+    </section>
+    <section class="bg-white rounded-2xl p-5 shadow-xl mb-4">
+      <h2 class="text-xl font-bold mb-1">Bagian B — Menjodohkan · 20 soal</h2>
+      <p class="text-sm text-slate-500 mb-4">Klik satu item <b>Kolom A</b>, lalu klik pasangannya di <b>Kolom B</b>. Klik Kolom B yang sudah terpasang (tanpa memilih A) untuk membatalkan.</p>
+      <div class="grid grid-cols-2 gap-3"><div id="colA" class="space-y-2"></div><div id="colB" class="space-y-2"></div></div>
+    </section>
+    <div class="text-center mb-8"><button id="btnHitung" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-lg text-lg">Hitung Nilai Otomatis</button></div>
+  </div>
+
+  <!-- HASIL -->
+  <section id="sHasil" class="hidden bg-white rounded-2xl p-6 shadow-xl text-center">
+    <h2 class="text-xl font-bold">Hasil Ulangan</h2>
+    <p id="hNama" class="text-slate-600"></p>
+    <div id="hNilai" class="text-7xl font-extrabold my-3"></div>
+    <p id="hRinci" class="text-slate-600"></p>
+    <p id="hStatus" class="font-bold text-lg mt-2"></p>
+    <div id="certWrap" class="hidden mt-6">
+      <h3 class="font-bold mb-2">Preview Sertifikat Kelulusan</h3>
+      <div class="cert p-6 rounded text-center">
+        <p class="text-amber-800 tracking-widest text-sm">SERTIFIKAT KELULUSAN</p>
+        <p class="text-xs mt-1">Diberikan kepada</p>
+        <p id="cNama" class="text-3xl font-serif font-bold my-2"></p>
+        <p id="cKelas" class="text-sm"></p>
+        <p class="mt-3 text-sm">telah lulus Ulangan Harian Informatika Kelas XII<br>materi <b>Dampak Sosial Informatika (UU ITE)</b></p>
+        <p id="cNilai" class="mt-3 text-xl font-bold text-amber-800"></p>
+        <p id="cTgl" class="text-xs mt-2 text-slate-500"></p>
+      </div>
+      <button id="btnPdf" class="mt-4 bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-3 rounded-lg">⬇ Download Sertifikat PDF</button>
+    </div>
+    <p id="remed" class="hidden mt-4 text-red-600">Nilai belum mencapai KKM (70). Silakan ikuti remedial sesuai arahan guru.</p>
+  </section>
+</main>
+
+<script>
+// ===== DATA: [soal, [A,B,C,D,E], indeksJawaban] =====
+const MCQ=[
+["Rina mengunggah foto pribadi rahasia temannya ke grup WhatsApp kelas tanpa izin. Pasal UU ITE yang paling tepat dikenakan adalah...",["Pasal 27 ayat 1","Pasal 28 ayat 1","Pasal 29","Pasal 30 ayat 1","Pasal 28 ayat 3"],0],
+["Dika membuat second account untuk menjelek-jelekkan dan memfitnah gurunya. Perbuatan ini melanggar ketentuan tentang...",["Perjudian online","Pemerasan","Pencemaran nama baik (Pasal 27 ayat 3)","Kesusilaan","Akses ilegal"],2],
+["Andi mengancam membocorkan rahasia Budi jika tidak diberi jawaban ujian. Unsur yang paling kuat dalam kasus ini adalah...",["Hoaks keonaran","Pemerasan dan pengancaman (Pasal 27 ayat 4)","Pencemaran nama baik","Ujaran SARA","Peretasan sistem"],1],
+["Seorang siswa mempromosikan link slot melalui Story Instagram demi imbalan. Analisis yang tepat adalah...",["Legal karena akun pribadi","Legal bila tidak ikut bermain","Melanggar Pasal 27 ayat 2 karena mendistribusikan/mempromosikan muatan perjudian","Melanggar Pasal 29","Hanya pelanggaran etika, bukan hukum"],2],
+["Siswa menjual skincare palsu sebagai produk asli di Olshop sehingga pembeli rugi. Pasal yang relevan...",["Pasal 27 ayat 2","Pasal 30 ayat 3","Pasal 29","Pasal 28 ayat 2","Pasal 28 ayat 1"],4],
+["Konten yang mengejek latar belakang suku dan agama siswa sekolah lain termasuk pelanggaran...",["Pasal 28 ayat 2 (kebencian berbasis SARA)","Pasal 28 ayat 1","Pasal 27 ayat 1","Pasal 30 ayat 2","Pasal 29"],0],
+["Beredar pesan 'Besok ada tawuran, sekolah akan diserang!' padahal palsu dan memicu kepanikan. Penyebar pesan dapat dijerat...",["Pasal 27 ayat 3","Pasal 28 ayat 3 (hoaks keonaran)","Pasal 28 ayat 1","Pasal 30 ayat 1","Tidak ada, karena hanya meneruskan"],1],
+["Seorang siswa terus-menerus mengirim DM berisi ancaman fisik kepada adik kelas. Ketentuan yang paling sesuai...",["Pasal 27 ayat 2","Pasal 28 ayat 2","Pasal 30 ayat 3","Pasal 29 (ancaman kekerasan/menakut-nakuti pribadi)","Pasal 28 ayat 1"],3],
+["Membuka dan mengintip HP teman yang tertinggal tanpa izin pada dasarnya adalah...",["Wajar jika hanya sebentar","Akses tanpa hak (Pasal 30 ayat 1)","Pemerasan","Hoaks","Tidak melanggar karena HP tidak dikunci"],1],
+["Alasan 'hanya prank' saat membajak akun Instagram teman TIDAK menghapus tanggung jawab hukum karena...",["Prank selalu dianggap kejahatan berat","Unsur utama adalah mengakses/menjebol sistem pengamanan tanpa hak, apa pun motifnya","Akun media sosial bukan sistem elektronik","Pelaku di bawah umur tidak pernah dipidana","Korban pasti melapor"],1],
+["Mengunduh kunci jawaban ujian dari komputer guru secara ilegal paling tepat dikategorikan sebagai...",["Pasal 27 ayat 4","Pasal 28 ayat 3","Pasal 30 ayat 3 (mengambil informasi rahasia dengan melanggar pengamanan)","Pasal 29","Pelanggaran etika ringan saja"],2],
+["Mana alasan paling komprehensif dibentuknya UU ITE?",["Membatasi penggunaan internet","Melarang semua transaksi digital","Mengganti seluruh hukum pidana","Pesatnya teknologi, tingginya transaksi digital, dan maraknya kejahatan siber memerlukan regulasi jelas","Hanya untuk melindungi pemerintah"],3],
+["Berikut yang BUKAN tujuan UU ITE adalah...",["Mencerdaskan kehidupan bangsa","Memberi rasa aman","Menjamin kepastian hukum","Mendorong ekonomi digital yang sehat","Membebaskan penyebaran informasi apa pun tanpa tanggung jawab"],4],
+["Perilaku yang paling mencerminkan etika digital adalah...",["Meneruskan broadcast tanpa membaca","Membagikan OTP ke teman dekat","Memeriksa kebenaran berita sebelum membagikannya","Membuat meme yang menghina teman","Meminjam password teman tanpa izin"],2],
+["Setelah menjadi korban cyberbullying, langkah PERTAMA yang paling strategis adalah...",["Membalas dengan menghina pelaku","Menghapus semua chat","Menyimpan bukti (screenshot chat, foto, URL)","Menutup akun selamanya","Diam agar tidak ramai"],2],
+["Portal resmi pemerintah untuk melaporkan konten negatif adalah...",["aduankonten.id","gosipsekolah.com","laporanwarga.net","cybertalk.id","infoviral.co"],0],
+["Penerapan prinsip 'saring sebelum sharing' yang paling tepat ketika menerima kabar mengejutkan di grup adalah...",["Langsung menyebar agar teman waspada","Mengecek sumber dan membandingkan dengan media kredibel","Menyebarkan dengan tambahan 'belum tentu benar'","Menunggu jumlah share banyak","Mempercayai pengirim yang akrab"],1],
+["Dina berkata, 'Saya cuma meneruskan, bukan pembuat hoaks.' Penilaian yang paling tepat...",["Aman, karena bukan pembuat","Aman jika di grup tertutup","Tetap berisiko, karena menyebarkan/mendistribusikan informasi bohong juga dapat dijerat","Hanya admin grup yang bertanggung jawab","Aman jika dihapus setelah sehari"],2],
+["Ciri pesan hoaks yang paling bisa dijadikan indikator awal adalah...",["Sumber jelas dan data lengkap","Judul provokatif, tanpa sumber, dan menyuruh 'sebarkan segera'","Ditulis dengan tata bahasa baku","Dimuat di situs resmi","Disertai tanggal dan penulis"],1],
+["Seseorang mengaku admin marketplace meminta kode OTP. Jika diberikan, dampak paling mungkin adalah...",["Akun diverifikasi lebih aman","Pengambilalihan akun dan kerugian finansial","Tidak ada dampak","Kecepatan internet naik","Akun otomatis premium"],1],
+["Siswa mengkritik fasilitas sekolah di media sosial dengan sopan dan berdasarkan fakta. Analisis paling tepat...",["Pasti pencemaran nama baik","Pasti hoaks","Kritik berbasis fakta dan santun berbeda dari penghinaan/fitnah, namun tetap perlu etika","Pasti melanggar Pasal 29","Harus dihapus karena menyinggung"],2],
+["Solusi paling efektif untuk menekan dampak negatif media sosial di kalangan pelajar adalah...",["Melarang semua pelajar memakai internet","Menghapus seluruh aplikasi media sosial","Menggabungkan literasi digital, etika, dan pemahaman konsekuensi hukum","Membiarkan tanpa pengawasan","Menghukum tanpa edukasi"],2],
+["Di grup WA kelas, seorang siswa terus diejek dengan stiker foto wajahnya hingga tertekan. Tindakan korban yang paling tepat...",["Membalas dengan ejekan lebih kasar","Mengancam pelaku","Menyimpan bukti, memblokir/melaporkan, lalu bercerita ke Guru BK/orang tua","Keluar sekolah","Menghapus akun dan diam"],2],
+["Makna kalimat 'Teknologi adalah alat, etika adalah kendali' adalah...",["Teknologi selalu buruk","Etika tidak penting jika teknologi canggih","Dampak teknologi bergantung pada pengguna yang dikendalikan nilai etika","Hukum tidak diperlukan","Alat tidak perlu dikendalikan"],2],
+["Mengirim pesan ancaman berulang-ulang yang membuat korban takut disebut...",["Cyberstalking","Crowdsourcing","Cloud computing","Tagging","Streaming"],0],
+["Feed/FYP seorang siswa terus menampilkan konten sejenis dengan yang baru ia tonton. Penyebab utama fenomena ini adalah...",["Admin memilih konten secara manual","Semua pengguna mendapat konten yang sama","Server sedang mengalami gangguan","Algoritma menganalisis perilaku (like, durasi tonton, komentar) untuk mempersonalisasi konten","Kecepatan internet menentukan isi feed"],3],
+["Setelah menonton satu video diet ekstrem, FYP Sinta dipenuhi konten serupa. Analisis dan tindakan paling tepat adalah...",["Wajar, ikuti saja semua saran konten","Algoritma memperkuat pola tontonan sehingga Sinta perlu menyeimbangkan preferensi dan bersikap kritis","Algoritma tidak berpengaruh sama sekali","Hapus perangkat dan berhenti internetan","Bagikan konten itu agar teman ikut tahu"],1],
+["Peran Big Data pada platform media sosial yang paling tepat adalah...",["Mengolah jutaan interaksi (like, share, komentar, durasi) secara instan untuk memahami perilaku pengguna","Menyimpan foto di galeri HP","Mengganti fungsi jaringan internet","Memblokir seluruh hoaks otomatis","Membuat akun pengguna baru"],0],
+["Media sosial tetap lancar melayani miliaran pengguna secara real-time karena didukung...",["Jumlah admin yang banyak","Satu komputer berkapasitas besar","Pesan berantai antar pengguna","Aplikasi tanpa koneksi internet","Jaringan dan komputasi awan (cloud) yang stabil berskala global"],4],
+["Pengguna yang hanya mengikuti akun berpendapat sama sehingga merasa pendapatnya paling benar mengalami...",["Cloud computing","Phishing","Echo chamber","Cyberstalking","Brute force"],2],
+["Dampak echo chamber yang paling mungkin terjadi saat diskusi kelas tentang isu sosial adalah...",["Semua siswa mudah sepakat tanpa data","Siswa sulit menerima sudut pandang berbeda dan opini terpolarisasi","Siswa menjadi lebih toleran","Diskusi menjadi lebih objektif","Tidak ada pengaruh"],1],
+["Ciri adiksi layar (ketergantungan media sosial) yang paling tepat adalah...",["Menggunakan HP 10 menit untuk tugas","Menelepon orang tua tiap hari","Membaca buku digital sesekali","Sulit berhenti scrolling hingga mengganggu tidur dan belajar","Mematikan notifikasi saat belajar"],3],
+["Strategi paling efektif mengendalikan screen time bagi pelajar adalah...",["Menetapkan batas waktu aplikasi, jadwal bebas gawai, dan mematikan notifikasi tidak penting","Menambah jumlah aplikasi hiburan","Begadang agar puas bermain","Membiarkan algoritma mengatur waktu","Menghapus kartu SIM"],0],
+["Dampak positif media sosial dari sisi ekonomi digital yang paling tepat adalah...",["Meningkatnya hoaks","Berkurangnya interaksi sosial","Terancamnya privasi","Hilangnya literasi digital","Terbukanya peluang bagi UMKM dan kreator konten"],4],
+["Pemanfaatan media sosial yang paling bijak dan bernilai positif bagi siswa adalah...",["Menjual produk palsu dengan klaim asli","Menyebar kabar viral tanpa cek","Mempromosikan produk UMKM buatan sendiri dengan jujur dan etis","Membuat second account untuk menyindir guru","Mengunggah data teman tanpa izin"],2],
+["Aplikasi 'tahu' apa yang kita sukai karena mengumpulkan data perilaku. Langkah menjaga privasi yang paling tepat adalah...",["Menyetujui semua izin aplikasi","Memeriksa dan membatasi izin/pengaturan privasi serta tidak membagikan data sensitif","Membagikan password agar dibantu aplikasi","Memakai satu password untuk semua akun","Mengunggah KTP agar akun aman"],1],
+["Pernyataan 'algoritma itu netral sehingga tidak memengaruhi pandangan kita' paling tepat dievaluasi sebagai...",["Benar sepenuhnya","Benar jika akunnya baru","Benar karena dibuat komputer","Keliru, karena algoritma dirancang memaksimalkan keterlibatan sehingga dapat membentuk pola paparan informasi","Tidak dapat dinilai"],3],
+["Konten sensasional lebih cepat viral karena memicu banyak interaksi. Implikasi bagi penyebaran hoaks dan langkah yang tepat adalah...",["Hoaks berpotensi cepat tersebar; perlu cek fakta sebelum membagikan","Hoaks pasti tidak viral","Viral berarti benar","Tidak perlu verifikasi","Cukup percaya jumlah like"],0],
+["Dari pertanyaan pemantik 'Kamu yang mengendalikan media sosial atau algoritma yang mengendalikanmu?', kesimpulan terbaik adalah...",["Algoritma sepenuhnya mengatur hidup kita","Media sosial tidak berpengaruh","Pengguna tidak perlu peduli","Semua konten pasti akurat","Pengguna harus sadar, kritis, dan disiplin agar tetap memegang kendali"],4],
+["Seorang kreator membuat judul provokatif palsu tentang 'ancaman penyerangan sekolah' demi views, lalu viral dan memicu kepanikan. Analisis paling lengkap...",["Hanya strategi marketing biasa","Tidak melanggar karena tujuannya views","Melanggar etika dan berpotensi melanggar Pasal 28 ayat 3 (hoaks keonaran), diperkuat algoritma yang mempercepat sebaran","Hanya pelanggaran Pasal 30","Menjadi sah jika ditulis 'prank'"],2],
+["Dua teman memakai aplikasi yang sama, tetapi FYP mereka sangat berbeda. Penjelasan paling tepat adalah...",["Server membagi konten secara acak","Aplikasi memiliki dua versi berbeda","Algoritma mempersonalisasi konten dari data tiap pengguna (watch time, like, komentar, pencarian)","Salah satu akun dibatasi admin","Perbedaan merek HP"],2],
+["Algoritma rekomendasi dirancang memaksimalkan retention time, bukan kebenaran objektif. Implikasi paling logis adalah...",["Pengguna cenderung terus disajikan konten yang disukai dan konten bertolak belakang tersaring","Semua konten dijamin benar","Algoritma menyeleksi hoaks otomatis","Pengguna selalu melihat beragam sudut pandang","Durasi aplikasi tidak diperhatikan"],0],
+["Perbedaan filter bubble dan echo chamber yang paling tepat adalah...",["Keduanya hanya istilah untuk hoaks","Filter bubble pasti disengaja, echo chamber tidak","Filter bubble hanya terjadi di televisi","Filter bubble: informasi tersaring oleh personalisasi; echo chamber: opini dipantulkan dan diperkuat tanpa pembanding","Echo chamber terjadi hanya di aplikasi chatting"],3],
+["Mengapa pengguna di dalam echo chamber lebih rentan terhadap hoaks?",["Mereka pasti tidak memakai internet","Confirmation bias membuatnya mudah percaya informasi yang sesuai keyakinan tanpa verifikasi","Hoaks hanya muncul di luar echo chamber","Mereka selalu mengecek tiga sumber","Algoritma menghapus semua hoaks"],1],
+["Rangkaian langkah paling efektif keluar dari filter bubble adalah...",["Mengikuti akun yang sama saja","Menekan 'suka' pada semua konten provokatif","Berhenti membaca berita","Hanya percaya teman sekelas","Mendiversifikasi akun yang diikuti, memakai aturan cek 3 sumber, dan aktif mencari informasi lewat kolom pencarian"],4],
+["Fitur yang membuat 5 menit scrolling berubah menjadi 2 jam adalah...",["Pengaturan kecerahan layar","Infinite scroll, autoplay, dan rekomendasi algoritma yang membuat titik berhenti tidak jelas","Ukuran memori HP","Kamera belakang","Mode pesawat"],1],
+["Penggunaan media sosial disebut bermasalah (adiksi digital) terutama ketika...",["Seseorang sering membuka media sosial untuk belajar","Seseorang memakainya satu jam sehari","Seseorang punya banyak teman online","Penggunaan sulit dikendalikan dan mengganggu belajar, tidur, aktivitas, atau hubungan sosial","Seseorang memakai HP saat libur"],3],
+["Pukul 19.30 Dina ingin membuka media sosial saat belajar. Penerapan aturan 5–25–30 yang tepat adalah...",["Tentukan tujuan, timer 25 menit sampai 19.55, lalu bebas layar 30 menit hingga 20.25","Buka sampai bosan lalu belajar","Timer 5 menit tanpa jeda","Timer 30 menit lalu lanjut tanpa jeda","Tanpa tujuan, 25 menit bebas layar"],0],
+["Fitur yang paling berfungsi mengundang pengguna kembali ke aplikasi saat sedang tidak dibuka adalah...",["Mode gelap","Pengaturan bahasa","Push notification dan streak/reward","Penyimpanan offline","Pembaruan sistem"],2],
+["Pernyataan 'siapa pun yang sering memakai media sosial pasti mengalami adiksi dan gangguan mental' paling tepat dinilai sebagai...",["Benar sepenuhnya","Benar untuk remaja","Benar jika memakai lebih dari 1 jam","Tidak dapat dibahas","Keliru: sering memakai tidak otomatis adiksi, dan hubungan sebab-akibat dengan kesehatan mental tidak sederhana"],4],
+["Sebuah video banjir lama diunggah ulang dengan caption seolah-olah baru saja terjadi. Masalah utamanya adalah...",["Videonya pasti rekayasa komputer","Video asli, tetapi konteks (waktu/lokasi) disesatkan sehingga tetap menyesatkan","Video terlalu panjang","Video tidak boleh diunggah ulang","Kualitas gambar rendah"],1],
+["Perbedaan hoaks dan disinformasi yang paling tepat adalah...",["Keduanya selalu benar","Hoaks hanya berupa video","Disinformasi tidak berbahaya","Disinformasi menekankan unsur kesengajaan untuk menyesatkan atau memengaruhi","Hoaks pasti dibuat pemerintah"],3],
+["Kamu menerima pesan 'WAJIB SHARE! Sekolah akan diserang!'. Langkah PERTAMA yang tepat menurut pedoman 'cek sebelum sebar' adalah...",["STOP: berhenti sebentar dan jangan langsung bereaksi, lalu cek sumber dan konteks","Langsung forward ke semua grup","Menambah emoji panik","Membalas dengan marah","Menunggu sampai ada 100 share"],0],
+["Mengapa konten beremosi tinggi bisa menjangkau lebih luas, dan bagaimana posisi algoritma?",["Algoritma sengaja memilih hoaks","Konten beremosi dilarang algoritma","Emosi memicu interaksi; sistem rekomendasi membaca interaksi sebagai sinyal tertarik tanpa menilai benar/salahnya","Hanya jumlah huruf yang menentukan","Jangkauan ditentukan umur akun"],2],
+["Rina percaya sebuah kabar karena 'sudah dibagikan sepuluh ribu orang'. Penilaian yang tepat adalah...",["Pasti benar karena banyak yang share","Viral ≠ benar: banyak yang share bukan bukti fakta, sehingga perlu cek sumber dan bukti","Benar jika ada emoji","Benar jika dari grup keluarga","Tidak perlu dinilai"],1],
+["Setelah mencari sepatu lari, iklan sepatu terus muncul di media sosial. Penyebab dari sisi informatika yang paling tepat adalah...",["Kebetulan semata","HP mendengar semua percakapan secara pasti","Operator seluler memilih iklan","Jejak digital dianalisis algoritma rekomendasi dan sistem iklan untuk menargetkan minat pengguna","Iklan muncul acak"],3],
+["Seorang siswa mengunggah foto berseragam dengan nama sekolah, lokasi real-time, dan jadwal kegiatan. Risiko dan tindakan yang paling tepat adalah...",["Tidak berisiko karena akun miliknya","Aman jika punya banyak pengikut","Berisiko oversharing dan kebocoran lokasi; batasi data pribadi dan cek sebelum upload","Aman jika caption lucu","Aman jika dihapus setahun kemudian"],2],
+["Kamu menerima pesan berisi tautan 'Selamat, kamu menang hadiah! Klik sekarang'. Tindakan paling tepat adalah...",["Tidak mengklik, menilai tautan dengan waspada karena berpotensi phishing, lalu menghapus/melaporkan","Klik cepat sebelum kedaluwarsa","Bagikan ke teman agar ikut menang","Isi data lengkap","Balas dengan nomor KTP"],0],
+["Jika password suatu akun bocor, perlindungan tambahan yang paling mencegah pengambilalihan akun adalah...",["Mengganti foto profil","Mengaktifkan 2FA/verifikasi dua langkah","Mengubah nama pengguna","Menambah jumlah teman","Mengunggah lebih banyak foto"],1],
+["Menurut kampanye #AMANdulu, mengapa personalisasi perlu diimbangi kesadaran privasi?",["Agar iklan semakin banyak","Agar algoritma semakin cepat","Agar HP lebih ringan","Agar akun lebih populer","Agar pengguna memahami data yang dikumpulkan dan dapat mengendalikan informasi pribadinya"],4]
+];
+const PAIRS=[
+["Algoritma & AI","Menganalisis perilaku pengguna untuk menentukan konten di FYP"],
+["Big Data","Pengolahan jutaan interaksi like, share, dan komentar secara instan"],
+["Jaringan & Cloud","Penjaga konektivitas global yang cepat dan real-time"],
+["Echo chamber","Pengguna hanya terpapar opini sejenis sehingga terpolarisasi"],
+["Screen time","Durasi waktu menatap layar gawai"],
+["Pasal 27 ayat 3","Penghinaan atau pencemaran nama baik"],
+["Pasal 28 ayat 2","Informasi penimbul kebencian berbasis SARA"],
+["Pasal 30 ayat 1","Mengakses sistem elektronik orang lain tanpa hak"],
+["Hoaks","Informasi palsu yang dikemas seolah benar"],
+["aduankonten.id","Portal resmi pelaporan konten negatif"],
+["Filter bubble","Informasi tersaring oleh personalisasi algoritma"],
+["Confirmation bias","Mudah percaya informasi yang sesuai keyakinan sendiri"],
+["Infinite scroll","Konten tanpa akhir sehingga titik berhenti tidak jelas"],
+["Digital wellbeing","Menggunakan teknologi secara sadar, sehat, dan seimbang"],
+["Aturan 5-25-30","Tentukan tujuan 5 menit, sesi 25 menit, bebas layar 30 menit"],
+["Disinformasi","Informasi salah yang sengaja disebarkan untuk menipu atau memengaruhi"],
+["Cek 3 sumber","Verifikasi ke minimal tiga sumber independen"],
+["2FA","Verifikasi dua langkah untuk melindungi akun"],
+["Oversharing","Terlalu banyak membagikan informasi pribadi"],
+["Phishing","Tautan atau pesan palsu untuk mencuri data penting"]
+];
+const KKM=70, MAXV=3;
+const $=id=>document.getElementById(id);
+let ans=Array(MCQ.length).fill(-1), match=Array(PAIRS.length).fill(-1), selA=null, bOrder, S={}, viol=0, active=false, done=false, out=false;
+bOrder=[...Array(PAIRS.length).keys()].sort(()=>Math.random()-.5);
+
+// ===== RENDER =====
+function renderMCQ(){
+  $('mcq').innerHTML=MCQ.map((q,i)=>`<div><p class="font-semibold mb-2">${i+1}. ${q[0]}</p><div class="space-y-1">${
+    q[1].map((o,j)=>`<button data-q="${i}" data-o="${j}" class="opt w-full text-left border rounded-lg p-2 text-sm hover:bg-slate-50 ${ans[i]===j?'sel':''}"><b>${'ABCDE'[j]}.</b> ${o}</button>`).join('')}</div></div>`).join('');
+}
+function renderMatch(){
+  $('colA').innerHTML=PAIRS.map((p,i)=>{
+    const m=match[i]>=0, s=selA===i;
+    return `<button data-a="${i}" class="w-full text-left border-2 rounded-lg p-2 text-sm ${s?'bg-yellow-100 border-yellow-500':m?'bg-emerald-50 border-emerald-500':'bg-white border-slate-300'}"><b>${i+1}.</b> ${p[0]}${m?` <span class="float-right text-xs bg-emerald-600 text-white rounded px-1.5">→ ${'ABCDEFGHIJKLMNOPQRSTUVWXY'[bOrder.indexOf(match[i])]}</span>`:''}</button>`}).join('');
+  $('colB').innerHTML=bOrder.map((o,pos)=>{
+    const a=match.indexOf(o);
+    return `<button data-b="${o}" class="w-full text-left border-2 rounded-lg p-2 text-sm ${a>=0?'bg-emerald-50 border-emerald-500':'bg-white border-slate-300'}"><b>${'ABCDEFGHIJKLMNOPQRSTUVWXY'[pos]}.</b> ${PAIRS[o][1]}${a>=0?` <span class="float-right text-xs bg-emerald-600 text-white rounded px-1.5">${a+1}</span>`:''}</button>`}).join('');
+  updProg();
+}
+function updProg(){
+  $('prog').textContent=`Terjawab: PG ${ans.filter(x=>x>=0).length}/${ans.length} · Jodoh ${match.filter(x=>x>=0).length}/${match.length}`;
+}
+$('mcq').addEventListener('click',e=>{
+  const b=e.target.closest('[data-q]'); if(!b||done) return;
+  ans[+b.dataset.q]=+b.dataset.o;
+  const y=scrollY; renderMCQ(); scrollTo(0,y); updProg();
+});
+$('colA').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]'); if(!b||done) return;
+  selA=selA===+b.dataset.a?null:+b.dataset.a; renderMatch();
+});
+$('colB').addEventListener('click',e=>{
+  const b=e.target.closest('[data-b]'); if(!b||done) return;
+  const o=+b.dataset.b, prev=match.indexOf(o);
+  if(selA===null){ if(prev>=0) match[prev]=-1; }
+  else{ if(prev>=0) match[prev]=-1; match[selA]=o; selA=null; }
+  renderMatch();
+});
+
+// ===== ANTI-KECURANGAN =====
+function fs(){const d=document.documentElement; return (d.requestFullscreen||d.webkitRequestFullscreen||(()=>Promise.resolve())).call(d)}
+function isFs(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
+function violation(msg){
+  if(!active||done||out) return;
+  out=true; viol++;
+  $('viol').textContent=`Pelanggaran: ${viol}/${MAXV}`;
+  $('cover').style.display='flex';
+  if(viol>=MAXV){
+    $('coverMsg').textContent='Batas pelanggaran tercapai. Ujian dikumpulkan otomatis.';
+    $('coverBtn').textContent='Lihat Hasil';
+    finish(true);
+  } else {
+    $('coverMsg').textContent=`${msg} (Pelanggaran ${viol} dari ${MAXV}). Pelanggaran ke-${MAXV} akan mengumpulkan ujian otomatis.`;
+  }
+}
+$('coverBtn').onclick=()=>{
+  $('cover').style.display='none'; out=false;
+  if(active&&!done) fs().catch(()=>{});
+};
+document.addEventListener('visibilitychange',()=>{if(document.hidden) violation('Kamu berpindah tab/aplikasi.')});
+window.addEventListener('blur',()=>violation('Fokus jendela hilang (berpindah aplikasi/jendela).'));
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{if(!isFs()) violation('Kamu keluar dari mode layar penuh.')}));
+['contextmenu','copy','cut','paste','dragstart','selectstart'].forEach(ev=>document.addEventListener(ev,e=>{if(active&&!e.target.matches('input'))e.preventDefault()}));
+document.addEventListener('keydown',e=>{
+  if(!active||done) return;
+  const k=e.key.toLowerCase();
+  const block=e.key==='PrintScreen'||e.key==='F12'||e.key==='F11'||e.key==='Meta'||e.key==='OS'||
+    (e.ctrlKey&&['p','s','u','c','v','x','a'].includes(k))||(e.ctrlKey&&e.shiftKey&&['i','j','c','s'].includes(k))||
+    (e.metaKey&&e.shiftKey)||(e.altKey&&e.key==='Tab');
+  if(block){
+    e.preventDefault();
+    if(e.key==='PrintScreen'){ try{navigator.clipboard.writeText(' ')}catch(_){} violation('Tombol screenshot (PrintScreen) terdeteksi.'); }
+  }
+});
+document.addEventListener('keyup',e=>{ if(active&&!done&&e.key==='PrintScreen'){ try{navigator.clipboard.writeText(' ')}catch(_){} violation('Tombol screenshot (PrintScreen) terdeteksi.'); }});
+window.addEventListener('beforeunload',e=>{if(active&&!done){e.preventDefault();e.returnValue=''}});
+
+// ===== PROTEKSI SCREENSHOT BERLAPIS =====
+let ht;
+function hideNow(ms){document.body.classList.add('hide');clearTimeout(ht);if(ms)ht=setTimeout(()=>{if(document.hasFocus())document.body.classList.remove('hide')},ms)}
+try{navigator.mediaDevices.getDisplayMedia=()=>Promise.reject(new DOMException('Diblokir','NotAllowedError'))}catch(_){}
+// konten langsung disembunyikan saat jendela tidak fokus / kursor keluar jendela
+window.addEventListener('blur',()=>{if(active)hideNow(0)});
+window.addEventListener('focus',()=>{if(active&&!out)hideNow(400)});
+document.addEventListener('mouseleave',()=>{if(active&&!done)hideNow(0)});
+document.addEventListener('mouseenter',()=>{if(active&&!out)hideNow(300)});
+// sembunyikan SEBELUM tombol screenshot selesai ditekan (keydown), lalu pulihkan
+document.addEventListener('keydown',e=>{
+  if(!active||done) return;
+  if(e.key==='PrintScreen'||e.key==='Meta'||e.key==='OS'||e.metaKey||(e.shiftKey&&e.key.toLowerCase()==='s')||e.key==='F13'||e.key==='F14'){hideNow(3000);try{navigator.clipboard.writeText(' ')}catch(_){}}
+},true);
+// watermark identitas + waktu (menyulitkan penyebaran hasil screenshot/foto layar)
+function setWM(){
+  const t=`${S.nama} · ${S.nis} · ${new Date().toLocaleTimeString('id-ID')}`.replace(/[<>&"']/g,'');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="170"><text x="10" y="100" font-family="Arial" font-size="15" font-weight="bold" fill="rgba(30,41,59,0.16)" transform="rotate(-25 160 85)">${t}</text></svg>`;
+  $('wm').style.backgroundImage=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+setInterval(()=>{if(active&&!done)setWM()},15000);
+
+// ===== ALUR =====
+$('btnStart').onclick=async()=>{
+  const nama=$('nama').value.trim(), kelas=$('kelas').value.trim(), nis=$('nis').value.trim();
+  if(!nama||!kelas||!nis) return alert('Lengkapi Nama, Kelas, dan NIS/No. Absen.');
+  S={nama,kelas,nis,sekolah:$('sekolah').value.trim()};
+  try{await fs()}catch(_){}
+  if(!isFs() && !confirm('Layar penuh tidak dapat diaktifkan di perangkat ini. Lanjutkan tanpa layar penuh?')) return;
+  $('sIdent').classList.add('hidden'); $('sExam').classList.remove('hidden');
+  $('who').textContent=`${nama} · ${kelas}`; $('viol').textContent=`Pelanggaran: 0/${MAXV}`;
+  renderMCQ(); renderMatch(); active=true; setWM(); $('wm').classList.remove('hidden'); scrollTo(0,0);
+};
+function finish(auto){
+  done=true; active=false; $('wm').classList.add('hidden'); document.body.classList.remove('hide');
+  const pg=ans.filter((a,i)=>a===MCQ[i][2]).length;
+  const mj=match.filter((m,i)=>m===i).length;
+  const pPG=pg/MCQ.length*80, pMJ=mj/PAIRS.length*20; const nilai=Math.round(pPG+pMJ);
+  $('sExam').classList.add('hidden'); $('sHasil').classList.remove('hidden');
+  $('hNama').textContent=`${S.nama} — ${S.kelas}`+(auto?' (dikumpulkan otomatis karena pelanggaran)':'');
+  $('hNilai').textContent=nilai; $('hNilai').className='text-7xl font-extrabold my-3 '+(nilai>=KKM?'text-emerald-600':'text-red-600');
+  $('hRinci').textContent=`PG benar ${pg}/${MCQ.length} (${pPG.toFixed(1)} poin) · Menjodohkan benar ${mj}/${PAIRS.length} (${pMJ.toFixed(1)} poin)`;
+  const lulus=nilai>=KKM;
+  $('hStatus').textContent=lulus?`LULUS (KKM ${KKM})`:`BELUM LULUS (KKM ${KKM})`;
+  $('hStatus').className='font-bold text-lg mt-2 '+(lulus?'text-emerald-600':'text-red-600');
+  S.nilai=nilai; S.tgl=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  if(lulus){
+    $('certWrap').classList.remove('hidden');
+    $('cNama').textContent=S.nama; $('cKelas').textContent=`Kelas ${S.kelas} · NIS ${S.nis}`+(S.sekolah?` · ${S.sekolah}`:'');
+    $('cNilai').textContent=`Nilai: ${nilai} / 100`; $('cTgl').textContent=S.tgl;
+  } else $('remed').classList.remove('hidden');
+  if(isFs()&&document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  scrollTo(0,0);
+}
+$('btnHitung').onclick=()=>{
+  const kosong=ans.filter(x=>x<0).length+match.filter(x=>x<0).length;
+  if(kosong&&!confirm(`Masih ada ${kosong} soal belum dijawab. Kumpulkan sekarang?`)) return;
+  if(!kosong&&!confirm('Kumpulkan jawaban dan hitung nilai?')) return;
+  finish(false);
+};
+
+// ===== SERTIFIKAT PDF =====
+$('btnPdf').onclick=()=>{
+  const {jsPDF}=window.jspdf; if(!jsPDF) return alert('jsPDF belum termuat. Periksa koneksi internet.');
+  const d=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'}), W=297, H=210;
+  d.setFillColor(255,251,235); d.rect(0,0,W,H,'F');
+  d.setDrawColor(180,83,9); d.setLineWidth(2.5); d.rect(8,8,W-16,H-16);
+  d.setLineWidth(0.6); d.rect(13,13,W-26,H-26);
+  d.setTextColor(120,53,15); d.setFont('times','bold'); d.setFontSize(34); d.text('SERTIFIKAT KELULUSAN',W/2,50,{align:'center'});
+  d.setFont('times','normal'); d.setFontSize(14); d.setTextColor(60,60,60); d.text('Diberikan kepada:',W/2,70,{align:'center'});
+  d.setFont('times','bolditalic'); d.setFontSize(32); d.setTextColor(15,23,42); d.text(S.nama,W/2,90,{align:'center'});
+  d.setDrawColor(180,83,9); d.setLineWidth(0.5); d.line(70,94,W-70,94);
+  d.setFont('times','normal'); d.setFontSize(13); d.setTextColor(60,60,60);
+  d.text(`Kelas ${S.kelas}  |  NIS/No. Absen ${S.nis}`+(S.sekolah?`  |  ${S.sekolah}`:''),W/2,104,{align:'center'});
+  d.setFontSize(15); d.text('telah dinyatakan LULUS Ulangan Harian Informatika Kelas XII',W/2,122,{align:'center'});
+  d.text('Materi: Dampak Sosial Informatika (Media Sosial & UU ITE)',W/2,131,{align:'center'});
+  d.setFont('times','bold'); d.setFontSize(22); d.setTextColor(180,83,9); d.text(`Nilai: ${S.nilai} / 100  (KKM ${KKM})`,W/2,148,{align:'center'});
+  d.setFont('times','italic'); d.setFontSize(12); d.setTextColor(80,80,80);
+  d.text(`Diterbitkan pada ${S.tgl}`,W/2,168,{align:'center'});
+  d.text('"Think Before You Post!"',W/2,180,{align:'center'});
+  d.save(`Sertifikat_${S.nama.replace(/\s+/g,'_')}.pdf`);
+};
+</script>
+</body>
+</html>
